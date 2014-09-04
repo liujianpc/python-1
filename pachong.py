@@ -1,6 +1,6 @@
 __author__ = 'liyuhang'
 #coding:utf-8
-import urllib,urllib2,cookielib,sys,random,re
+import urllib,urllib2,cookielib,sys,random,re,time
 reload(sys)
 sys.setdefaultencoding('utf8')
 
@@ -11,48 +11,43 @@ data=urllib.urlencode(value)
 headers={"Origin":"http://rs.xidian.edu.cn","Referer":"http://rs.xidian.edu.cn/forum.php","User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.78.2 (KHTML, like Gecko) Version/7.0.6 Safari/537.78.2"}
 req=urllib2.Request(url=url,data=data,headers=headers)
 cj=cookielib.CookieJar()
-opener=urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
-
+opener=urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))#第一次登陆获得cookie
 response=opener.open(req)#登陆成功
-for lsl in cj:
-    print lsl
-#print response.read().encode("utf-8")验证登陆成功
-def shuitie(opener,url,timelate,pagenumber,message):
-    judege=True
+message=["路过帮顶，请叫我雷锋","mark,等下下下来看看","好资源，mark留着等会看","楼主不要管我，让我一个人静一静..."]
+def shuitie(opener,url,timelate,pagenumber,message):#opener为第一次登陆获得cookie的对象 url为每个帖子相同的前面部分，temlate为每隔多久水一次帖子，pagenumber为水贴的数量，message为水贴的留言
+    judege=0
     alltitle=[]
-    while(judege):
-        judege=False
-        #number=random.randint(646,5000)
-        number=2692
-        url_open=url+"64"+str(number)
-        response=opener.open(url_open).read().encode("utf-8")
-        response=opener.open("http://rs.xidian.edu.cn/forum.php?mod=viewthread&tid=667320").read().encode('utf-8')
-        #print response
-        fid=re.findall("ptm\s*pnpost.*?fid=(\d*)",response,re.S)#获取当前页面的fid
-        fid="72"
-        formhash=re.findall('formhash=(.*?)">退出',response,re.S)[0]
-        print formhash
-        title=re.findall("<title>(.*?)</title>",response,re.S)#title
-        print title[0]
-        if(len(title)==1):
-            alltitle.append(title[0])
-        data={"message":message,"formhash":formhash,"usesig":"1","subject":"  "}
+    allurl=[]
+    while(judege<pagenumber):
+        number=random.randint(646,5000)
+        tid="64"+str(number)
+        url_open=url+tid
+        response=opener.open(url_open).read().encode("utf-8")#进入要水的帖子获取需要的参数
+        fid=re.findall("ptm\s*pnpost.*?fid=(\d*)",response,re.S)[0]#获取当前页面的fid
+        formhash=re.findall('formhash=(.*?)">退出',response,re.S)[0]#获取当前页面的formhash
+        title=re.findall("<title>(.*?)</title>",response,re.S)[0]#title
+        print title
+        alltitle.append(title)
+        allurl.append(url_open)
+        print url_open
+        try:
+            f=open("log.text","a")
+            f.write(title+'\n')
+            f.write(url_open+'\n\n')
+            f.close()
+        finally:
+            f.close()
+        data={"message":message[judege%len(message)],"formhash":formhash,"usesig":"1","subject":"  "}
         data=urllib.urlencode(data)
-        # if(len(fid)==1):
-        #     fid=fid[0]
-        # else:
-        #     continue
-        #tid="64"+str(number)
-        tid="667320"
-        #requestURL="http://rs.xidian.edu.cn/forum.php?mod=post&action=reply&fid="+fid+"&tid="+tid+"&extra=&replysubmit=yes&infloat=yes&handlekey=fastpost&inajax=1"
-        requestURL="http://rs.xidian.edu.cn/forum.php?mod=post&action=reply&fid=13&tid=667320&extra=page%3D1&replysubmit=yes&infloat=yes&handlekey=fastpost&inajax=1"
-        print requestURL
+        requestURL="http://rs.xidian.edu.cn/forum.php?mod=post&action=reply&fid="+fid+"&tid="+tid+"&extra=&replysubmit=yes&infloat=yes&handlekey=fastpost&inajax=1"
         req=urllib2.Request(headers=headers,url=requestURL,data=data)
         response=opener.open(req).read().encode("utf-8")
-    #print(alltitle[0])
+        judege=judege+1
+        time.sleep(timelate)#睡眠
+    print "work over!"
 
 
 
-shuitie(opener,"http://rs.xidian.edu.cn/forum.php?mod=viewthread&tid=",11,1,"MARK,下下来看看..")
+shuitie(opener,"http://rs.xidian.edu.cn/forum.php?mod=viewthread&tid=",5,2,message)
 the_page=response.read().decode("utf-8")
 
